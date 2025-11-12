@@ -100,12 +100,23 @@ const KasirPosPage = () => {
   const handleSubmitOrder = async () => {
     setLoadingSubmit(true);
     try {
-      // Kirim data ke API
-      await createPosCashOrder({
-        standId: selectedStandId,
-        items: cart,
-        total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0)
-      });
+      // PERBAIKAN:
+      // Susun data sesuai format yang diharapkan backend (dari komentar apiService.js)
+      // JANGAN kirim 'total'
+      const orderData = {
+        tenant: selectedStandId,        // 'tenant' adalah ID stand
+        payment_method: "CASH",       // Sesuai alur "Bayar Tunai"
+        items: cart.map(item => ({
+          menu_item: item.id,       // 'menu_item' adalah ID menu
+          qty: item.qty
+          // Jika Anda punya varian, tambahkan 'variants' di sini
+        }))
+        // 'total' TELAH DIHAPUS. Backend WAJIB menghitung ulang.
+      };
+
+      // Kirim data yang sudah bersih ke API
+      await createPosCashOrder(orderData);
+      
       alert('Pesanan berhasil dibuat!');
       setCart([]); // Kosongkan keranjang
     } catch (err) {

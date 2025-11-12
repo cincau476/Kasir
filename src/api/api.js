@@ -1,7 +1,12 @@
 import axios from 'axios';
 
-// Ganti URL ini dengan URL backend Django Anda
-const API_BASE_URL = 'http://localhost:8000/api/orders/'; 
+// PERBAIKAN:
+// Ambil URL dari Environment Variable.
+// React (CRA) otomatis membaca variabel yang diawali 'REACT_APP_'
+const API_BASE_URL = process.env.REACT_APP_API_URL;
+
+// Saat di-deploy ke production, Anda akan mengganti nilai variabel ini
+// menjadi "https://api.website-anda.com/api/orders/"
 
 const api = axios.create({
   baseURL: API_BASE_URL,
