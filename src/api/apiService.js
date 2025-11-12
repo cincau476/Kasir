@@ -4,6 +4,25 @@
 // Impor instance axios yang sudah kita konfigurasi
 import api from './api.js';
 
+// --- FUNGSI API BARU UNTUK AUTENTIKASI ---
+
+export const login = (username, password) => {
+  // Panggil endpoint /api/auth/login/ yang sudah kita buat di backend
+  return api.post('/api/auth/login/', {
+    username,
+    password,
+  });
+};
+
+export const logout = () => {
+  return api.post('/api/auth/logout/');
+};
+
+export const checkAuth = () => {
+  // Panggil endpoint /api/auth/user/
+  return api.get('/api/auth/user/');
+};
+
 // --- Fungsi API (Simulasi) --- GANTI MENJADI:
 // --- Fungsi API (Terhubung ke Backend) ---
 

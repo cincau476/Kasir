@@ -1,20 +1,29 @@
-// Nama File: src/components/ProtectedRoute.jsx
+// src/components/ProtectedRoute.jsx
 
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
+// --- TAMBAHKAN IMPOR INI ---
+import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = () => {
-  // Ambil token dari localStorage, sesuai dengan yang Anda set di api.js
-  const token = localStorage.getItem('authToken'); 
+  // --- PERUBAHAN: Ambil data dari context ---
+  const { user, isLoading } = useAuth();
 
-  if (!token) {
-    // Jika TIDAK ADA token, lempar pengguna ke halaman /login
-    // 'replace' berarti pengguna tidak bisa menekan "back" untuk kembali
+  // Ambil token dari localStorage // <-- HAPUS BARIS INI
+  // const token = localStorage.getItem('authToken');
+
+  // Tampilkan loading jika context masih mengecek auth
+  if (isLoading) {
+    return <div>Memeriksa sesi...</div>;
+  }
+
+  // --- PERUBAHAN: Cek 'user' dari context ---
+  if (!user) {
+    // Jika TIDAK ADA user, lempar ke halaman /login
     return <Navigate to="/login" replace />;
   }
 
-  // Jika ADA token, izinkan akses ke halaman (Render <Outlet />)
-  // <Outlet /> ini mewakili halaman DashboardPage, KasirPosPage, dll.
+  // Jika ADA user, izinkan akses
   return <Outlet />;
 };
 
