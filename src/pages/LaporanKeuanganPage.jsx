@@ -67,7 +67,10 @@ const LaporanKeuanganPage = () => {
         setLoading(true);
         setError(null);
         
-        const response = await getLaporanKeuangan(selectedPeriode, selectedStand);
+        const response = await getLaporanKeuangan({
+        periode: selectedPeriode,
+        stand: selectedStand
+        });
         
         setStats(response.data.stats);
         setTransactions(response.data.transactions);

@@ -1,6 +1,8 @@
 // src/context/AuthContext.jsx
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+// --- TAMBAHKAN IMPOR REACT ROUTER ---
+import { useNavigate, useLocation } from 'react-router-dom';
 // Pastikan path ini benar menunjuk ke apiService.js Anda
 import { checkAuth, login as apiLogin, logout as apiLogout } from '../api/apiService';
 
@@ -12,31 +14,50 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // Untuk loading awal
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // --- TAMBAHKAN HOOK NAVIGASI ---
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Cek status login (via cookie) saat aplikasi pertama kali dimuat
+  // Cek status login saat aplikasi pertama kali dimuat
   useEffect(() => {
     checkAuth()
       .then(response => {
-        setUser(response.data); // Jika berhasil, user login
+        setUser(response.data);
       })
       .catch(() => {
-        setUser(null); // Jika gagal (cookie tidak ada/valid), user tidak login
+        setUser(null);
       })
       .finally(() => {
-        setIsLoading(false); // Selesai loading
+        setIsLoading(false);
       });
   }, []);
 
   const login = async (username, password) => {
     const response = await apiLogin(username, password);
-    setUser(response.data); // Simpan data user di state
+    setUser(response.data);
+    
+    // --- TAMBAHKAN NAVIGASI SETELAH LOGIN ---
+    // Arahkan ke halaman yang terakhir dikunjungi sebelum redirect ke login,
+    // atau ke halaman utama jika tidak ada.
+    const from = location.state?.from?.pathname || '/';
+    navigate(from, { replace: true });
+    
     return response.data;
   };
 
   const logout = async () => {
-    await apiLogout();
-    setUser(null);
+    try {
+      await apiLogout();
+    } catch (error) {
+      console.error("Logout gagal:", error);
+      // Tetap lanjutkan proses logout di frontend
+    } finally {
+      setUser(null);
+      // --- TAMBAHKAN NAVIGASI SETELAH LOGOUT ---
+      navigate('/login');
+    }
   };
 
   const value = {
