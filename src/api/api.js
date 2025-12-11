@@ -1,15 +1,14 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// Pastikan mengarah ke port Django (8000) dengan prefix /api
+const API_URL = 'http://localhost:8000/api'; 
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
+const apiClient = axios.create({
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  // --- PERUBAHAN: TAMBAHKAN INI ---
-  // Ini adalah perintah agar axios mengirim cookie di setiap request
-  withCredentials: true,
+  withCredentials: true, // <-- PENTING: Wajib true agar cookie terbaca
 });
 
-export default api;
+export default apiClient;

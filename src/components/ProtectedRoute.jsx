@@ -1,29 +1,34 @@
 // src/components/ProtectedRoute.jsx
-
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-// --- TAMBAHKAN IMPOR INI ---
 import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = () => {
-  // --- PERUBAHAN: Ambil data dari context ---
+// Terima props 'allowedRoles' (Array role yang boleh masuk)
+const ProtectedRoute = ({ allowedRoles }) => {
   const { user, isLoading } = useAuth();
 
-  // Ambil token dari localStorage // <-- HAPUS BARIS INI
-  // const token = localStorage.getItem('authToken');
-
-  // Tampilkan loading jika context masih mengecek auth
   if (isLoading) {
-    return <div>Memeriksa sesi...</div>;
+    return <div className="flex items-center justify-center h-screen">Memuat sesi...</div>;
   }
 
-  // --- PERUBAHAN: Cek 'user' dari context ---
+  // 1. Cek Login: Kalau tidak ada user, lempar ke Login
   if (!user) {
-    // Jika TIDAK ADA user, lempar ke halaman /login
     return <Navigate to="/login" replace />;
   }
 
-  // Jika ADA user, izinkan akses
+  // 2. Cek Role: Kalau role user tidak ada di daftar allowedRoles, tolak!
+  // (Pastikan backend mengirim role dalam huruf kecil: 'admin', 'cashier', 'seller')
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    // Logika redirect jika ditolak:
+    // Jika dia Cashier tapi coba akses halaman Admin, kembalikan ke POS
+    if (user.role === 'cashier') {
+        return <Navigate to="/pos" replace />;
+    }
+    // Jika user lain, kembalikan ke Dashboard utama
+    return <Navigate to="/" replace />;
+  }
+
+  // Jika lolos semua cek, tampilkan halaman
   return <Outlet />;
 };
 

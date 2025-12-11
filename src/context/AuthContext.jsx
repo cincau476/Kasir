@@ -1,84 +1,71 @@
 // src/context/AuthContext.jsx
+import React, { createContext, useState, useEffect, useContext } from 'react';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-// --- TAMBAHKAN IMPOR REACT ROUTER ---
-import { useNavigate, useLocation } from 'react-router-dom';
-// Pastikan path ini benar menunjuk ke apiService.js Anda
-import { checkAuth, login as apiLogin, logout as apiLogout } from '../api/apiService';
+// Hapus 'logout' dari import agar tidak error SyntaxError
+import { checkAuth, login as apiLogin } from '../api/apiService'; 
 
 const AuthContext = createContext(null);
 
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+// URL Login Customer (Port 5173)
+const CUSTOMER_LOGIN_URL = 'http://localhost:5173/login';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // --- TAMBAHKAN HOOK NAVIGASI ---
-  const navigate = useNavigate();
-  const location = useLocation();
 
-  // Cek status login saat aplikasi pertama kali dimuat
   useEffect(() => {
-    checkAuth()
-      .then(response => {
-        setUser(response.data);
-      })
-      .catch(() => {
-        setUser(null);
-      })
-      .finally(() => {
+    const verifyUser = async () => {
+      try {
+        setIsLoading(true);
+        // 1. Cek ke backend: "Siapa saya?"
+        const response = await checkAuth();
+        const userData = response.data.user;
+
+        // 2. Validasi Role: Pastikan bukan customer biasa
+        if (userData.role === 'customer') {
+             throw new Error("Customer tidak boleh masuk sini");
+        }
+
+        // 3. Sukses, simpan data user
+        setUser(userData);
+      } catch (error) {
+        console.warn("Belum login atau sesi habis, redirecting...", error);
+        // 4. Jika gagal, lempar ke Login Customer
+        window.location.href = CUSTOMER_LOGIN_URL;
+      } finally {
         setIsLoading(false);
-      });
+      }
+    };
+
+    verifyUser();
   }, []);
 
   const login = async (username, password) => {
     const response = await apiLogin(username, password);
     setUser(response.data);
-    
-    // --- TAMBAHKAN NAVIGASI SETELAH LOGIN ---
-    // Arahkan ke halaman yang terakhir dikunjungi sebelum redirect ke login,
-    // atau ke halaman utama jika tidak ada.
-    const from = location.state?.from?.pathname || '/';
-    navigate(from, { replace: true });
-    
     return response.data;
   };
 
   const logout = async () => {
-    try {
-      await apiLogout();
-    } catch (error) {
-      console.error("Logout gagal:", error);
-      // Tetap lanjutkan proses logout di frontend
-    } finally {
-      setUser(null);
-      // --- TAMBAHKAN NAVIGASI SETELAH LOGOUT ---
-      navigate('/login');
-    }
+    // --- MODIFIKASI: Hapus call ke Backend ---
+    // Kita hapus 'await apiLogout()' untuk menghindari error di api.js
+    
+    // Langsung hapus user di state frontend
+    setUser(null);
+    
+    // Redirect kembali ke login customer
+    window.location.href = CUSTOMER_LOGIN_URL;
   };
-
-  const value = {
-    user,
-    isLoading,
-    login,
-    logout,
-  };
-
-  // Tampilkan loading jika sedang mengecek auth awal
-  if (isLoading) {
-    return (
-        <div className="flex items-center justify-center min-h-screen">
-            Memverifikasi sesi...
-        </div>
-    );
-  }
 
   return (
-    <AuthContext.Provider value={value}>
-      {children}
+    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+      {!isLoading ? children : (
+        <div className="flex justify-center items-center h-screen bg-gray-100">
+            <p className="text-gray-500 font-semibold animate-pulse">Memuat Kasir...</p>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => useContext(AuthContext);

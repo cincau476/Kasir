@@ -5,20 +5,19 @@ import api from './api.js';
 
 export const login = (username, password) => {
   // HAPUS '/api/' dari sini
-  return api.post('auth/login/', {
+  return api.post('users/login/', {
     username,
     password,
   });
 };
 
-export const logout = () => {
-  // HAPUS '/api/' dari sini
-  return api.post('auth/logout/');
+export const checkAuth = () => {
+  // Panggil endpoint cek user
+  return apiClient.get('/users/check-auth/');
 };
 
-export const checkAuth = () => {
-  // HAPUS '/api/' dari sini
-  return api.get('auth/user/');
+export const logout = () => {
+  return apiClient.post('/users/logout/');
 };
 
 // --- Fungsi API (Terhubung ke Backend) ---
