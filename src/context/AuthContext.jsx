@@ -1,69 +1,45 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
-
-// Hapus 'logout' dari import agar tidak error SyntaxError
-import { checkAuth, login as apiLogin } from '../api/apiService'; 
+import { checkAuth } from '../api/apiService'; 
 
 const AuthContext = createContext(null);
-
-// URL Login Customer (Port 5173)
-const CUSTOMER_LOGIN_URL = 'http://localhost:5173/login';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const verifyUser = async () => {
+    const initAuth = async () => {
+      // 1. TANGKAP TOKEN DARI URL (Kiriman dari User App)
+      const params = new URLSearchParams(window.location.search);
+      const tokenFromUrl = params.get('token');
+
+      if (tokenFromUrl) {
+        localStorage.setItem('token', tokenFromUrl);
+        // Hapus token dari URL biar bersih
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      // 2. CEK VALIDITAS TOKEN
       try {
-        setIsLoading(true);
-        // 1. Cek ke backend: "Siapa saya?"
-        const response = await checkAuth();
-        const userData = response.data.user;
-
-        // 2. Validasi Role: Pastikan bukan customer biasa
-        if (userData.role === 'customer') {
-             throw new Error("Customer tidak boleh masuk sini");
-        }
-
-        // 3. Sukses, simpan data user
-        setUser(userData);
+        await checkAuth(); // Panggil backend
+        // Kalau sukses, backend akan return user data (atau dihandle di apiService)
+        // Kita set user manual atau panggil endpoint profile jika perlu
+        setUser({ role: 'cashier', name: 'Kasir' }); // Atau ambil dari response checkAuth
       } catch (error) {
-        console.warn("Belum login atau sesi habis, redirecting...", error);
-        // 4. Jika gagal, lempar ke Login Customer
-        window.location.href = CUSTOMER_LOGIN_URL;
+        // Kalau gagal/tidak ada token, lempar balik ke Login User
+        window.location.href = 'http://localhost:5173/login';
       } finally {
         setIsLoading(false);
       }
     };
 
-    verifyUser();
+    initAuth();
   }, []);
 
-  const login = async (username, password) => {
-    const response = await apiLogin(username, password);
-    setUser(response.data);
-    return response.data;
-  };
-
-  const logout = async () => {
-    // --- MODIFIKASI: Hapus call ke Backend ---
-    // Kita hapus 'await apiLogout()' untuk menghindari error di api.js
-    
-    // Langsung hapus user di state frontend
-    setUser(null);
-    
-    // Redirect kembali ke login customer
-    window.location.href = CUSTOMER_LOGIN_URL;
-  };
-
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
-      {!isLoading ? children : (
-        <div className="flex justify-center items-center h-screen bg-gray-100">
-            <p className="text-gray-500 font-semibold animate-pulse">Memuat Kasir...</p>
-        </div>
-      )}
+    <AuthContext.Provider value={{ user, isLoading }}>
+      {!isLoading ? children : <div>Loading...</div>}
     </AuthContext.Provider>
   );
 };

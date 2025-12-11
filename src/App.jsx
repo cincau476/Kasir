@@ -6,7 +6,7 @@ import DashboardPage from './pages/DashboardPage';
 import KasirPosPage from './pages/KasirPosPage';
 import AntrianKonfirmasiPage from './pages/AntrianKonfirmasiPage';
 import LaporanKeuanganPage from './pages/LaporanKeuanganPage';
-import LoginPage from './pages/LoginPage';
+// HAPUS import LoginPage karena sudah tidak dipakai
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 
@@ -15,7 +15,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
+          {/* HAPUS Route /login */}
 
           {/* Wrapper Layout Utama (Ada Header) */}
           <Route element={<Layout />}>

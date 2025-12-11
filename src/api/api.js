@@ -1,14 +1,20 @@
 import axios from 'axios';
 
-// Pastikan mengarah ke port Django (8000) dengan prefix /api
 const API_URL = 'http://localhost:8000/api'; 
 
 const apiClient = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true, // <-- PENTING: Wajib true agar cookie terbaca
+  withCredentials: true,
 });
+
+// --- WAJIB TAMBAH INI SUPAYA TOKEN TERBAWA ---
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Token ${token}`;
+  }
+  return config;
+});
+// ---------------------------------------------
 
 export default apiClient;
