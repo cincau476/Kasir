@@ -1,10 +1,8 @@
 // src/components/Header.jsx
-
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-// Impor ikon baru dan hook useAuth
 import { Rocket, LogOut, User } from 'lucide-react'; 
-import { useAuth } from '../context/AuthContext'; // Sesuaikan path jika perlu
+import { useAuth } from '../context/AuthContext'; 
 
 const NavItem = ({ to, children }) => (
   <NavLink
@@ -22,22 +20,29 @@ const NavItem = ({ to, children }) => (
 );
 
 const Header = () => {
-  // State untuk mengontrol menu dropdown
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  
-  // Ambil user dan fungsi logout dari Context
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuth(); // Ambil user & logout dari Context
 
   const handleLogout = () => {
-    setIsMenuOpen(false); // Tutup menu
-    logout(); // Panggil fungsi logout dari context
+    setIsMenuOpen(false); // Tutup dropdown
+    
+    // Cek apakah fungsi logout tersedia sebelum dipanggil
+    if (typeof logout === 'function') {
+      logout(); 
+    } else {
+      console.error("Fungsi logout belum tersedia di AuthContext");
+      // Fallback darurat: hapus token manual & redirect
+      localStorage.removeItem('token');
+      window.location.href = 'http://localhost:5173/login';
+    }
   };
   
-  // Ambil inisial, 'K' adalah fallback jika user tidak ada
-  const userInitial = user ? user.username.charAt(0).toUpperCase() : 'K';
+  // Fallback inisial nama jika user belum terload
+  const userInitial = user?.username ? user.username.charAt(0).toUpperCase() : 'K';
 
   return (
-    <header className="bg-primary-blue shadow-lg"> 
+    // PERBAIKAN UTAMA: 'relative z-50' agar menu tidak tertutup konten lain
+    <header className="bg-primary-blue shadow-lg relative z-50"> 
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           
@@ -49,7 +54,7 @@ const Header = () => {
             <span className="text-white text-xl font-bold">Kantinku</span>
           </div>
 
-          {/* Navigasi Halaman */}
+          {/* Navigasi Halaman (Tengah) */}
           <div className="hidden md:flex md:items-center md:space-x-2">
             <NavItem to="/">Dashboard</NavItem>
             <NavItem to="/pos">Kasir POS</NavItem>
@@ -57,22 +62,18 @@ const Header = () => {
             <NavItem to="/laporan">Laporan Keuangan</NavItem>
           </div>
 
-          {/* Tombol Akun dan Menu Dropdown */}
+          {/* Area Akun (Kanan) */}
           <div className="relative">
-            {/* Tombol Bulat Oranye */}
             <button 
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="bg-accent-orange h-8 w-8 rounded-full flex items-center justify-center text-primary-blue text-sm font-bold transition-transform duration-150 hover:scale-110"
+              className="bg-accent-orange h-8 w-8 rounded-full flex items-center justify-center text-primary-blue text-sm font-bold transition-transform duration-150 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary-blue focus:ring-white"
             >
               {userInitial}
             </button>
 
-            {/* Menu Dropdown (Muncul saat isMenuOpen true) */}
+            {/* Dropdown Menu */}
             {isMenuOpen && (
-              <div 
-                className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden"
-              >
-                {/* Detail Akun Singkat */}
+              <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="p-4 border-b border-gray-100">
                   <div className="flex items-center gap-3">
                     <div className="bg-gray-100 p-2 rounded-full text-gray-600">
@@ -80,16 +81,15 @@ const Header = () => {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-800 truncate">
-                        {user.username}
+                        {user?.username || 'Kasir'}
                       </p>
                       <p className="text-xs text-gray-500 truncate">
-                        {user.email}
+                        {user?.role || 'Staff'}
                       </p>
                     </div>
                   </div>
                 </div>
                 
-                {/* Tombol Logout */}
                 <div className="p-2">
                   <button
                     onClick={handleLogout}

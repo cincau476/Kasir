@@ -1,10 +1,9 @@
-// Impor instance axios yang sudah kita konfigurasi
+// src/api/apiService.js
 import api from './api.js';
 
 // --- FUNGSI API BARU UNTUK AUTENTIKASI ---
 
 export const login = (username, password) => {
-  // HAPUS '/api/' dari sini
   return api.post('users/login/', {
     username,
     password,
@@ -12,46 +11,51 @@ export const login = (username, password) => {
 };
 
 export const checkAuth = () => {
-  // Panggil endpoint cek user
-  return apiClient.get('/users/check-auth/');
+  // Hapus '/' di awal agar konsisten dengan baseURL
+  return api.get('/users/check-auth/');
 };
 
 export const logout = () => {
-  return apiClient.post('/users/logout/');
+  return api.post('/users/logout/');
 };
 
 // --- Fungsi API (Terhubung ke Backend) ---
 
 // 1. DashboardPage
 export const getKasirDashboardSummary = () => {
-  // 'reports/summary/' sudah benar (tanpa /api/)
+  // Sesuai orders/urls.py: path('reports/summary/', ...) -> /api/reports/summary/
   return api.get('reports/summary/'); 
 };
 
 // 2. KasirPosPage
 export const getPosStands = () => {
-  // 'stands/' sudah benar
-  return api.get('stands/');
+  // PERBAIKAN: Tambahkan 'tenants/' karena di canteen/urls.py pakai path('api/tenants/', ...)
+  return api.get('tenants/stands/'); 
 };
 
 // 2. KasirPosPage
 export const getPosMenusByStandId = (standId) => {
-  return api.get(`stands/${standId}/menus/`);
+  // PERBAIKAN: Tambahkan 'tenants/'
+  return api.get(`tenants/stands/${standId}/menus/`);
 };
 
 // 2. KasirPosPage
 export const createPosCashOrder = (orderData) => {
-  return api.post('create/', orderData);
+  // Sesuai orders/urls.py: path('orders/create/', ...) -> /api/orders/create/
+  return api.post('orders/create/', orderData);
 };
 
 // 3. AntrianKonfirmasiPage
 export const getAwaitingCashOrders = () => {
-  return api.get('all/?status=AWAITING_PAYMENT&payment_method=CASH');
+  // Sesuai orders/urls.py: path('orders/', ...) -> /api/orders/
+  return api.get('orders/?status=AWAITING_PAYMENT&payment_method=CASH');
 };
 
 // 3. AntrianKonfirmasiPage
 export const confirmCashPaymentApi = (orderUuid) => {
-  return api.post(`${orderUuid}/confirm-cash/`);
+  // Sesuai cashier/urls.py: path('orders/.../confirm-cash/') 
+  // dan canteen/urls.py include 'api/cashier/'
+  return api.post(`cashier/orders/${orderUuid}/confirm-cash/`);
 };
 
 // 4. LaporanKeuanganPage
@@ -60,6 +64,5 @@ export const getLaporanKeuangan = (paramsObject) => {
     periode: paramsObject.periode,
     stand_id: paramsObject.stand === 'semua' ? undefined : paramsObject.stand
   };
-  // 'reports/laporan-keuangan/' sudah benar
-  return api.get(`reports/laporan-keuangan/`, { params });
+  return api.get('reports/summary/', { params });
 };

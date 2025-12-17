@@ -1,6 +1,7 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { checkAuth } from '../api/apiService'; 
+// Import fungsi logout dari API service
+import { checkAuth, logout as logoutApi } from '../api/apiService'; 
 
 const AuthContext = createContext(null);
 
@@ -10,36 +11,57 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initAuth = async () => {
-      // 1. TANGKAP TOKEN DARI URL (Kiriman dari User App)
+      // 1. Tangkap Token URL
       const params = new URLSearchParams(window.location.search);
       const tokenFromUrl = params.get('token');
-
       if (tokenFromUrl) {
         localStorage.setItem('token', tokenFromUrl);
-        // Hapus token dari URL biar bersih
         window.history.replaceState({}, document.title, window.location.pathname);
       }
 
-      // 2. CEK VALIDITAS TOKEN
+      // 2. Cek Validitas
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = 'http://localhost:5173/login';
+        return;
+      }
+
       try {
-        await checkAuth(); // Panggil backend
-        // Kalau sukses, backend akan return user data (atau dihandle di apiService)
-        // Kita set user manual atau panggil endpoint profile jika perlu
-        setUser({ role: 'cashier', name: 'Kasir' }); // Atau ambil dari response checkAuth
+        const response = await checkAuth(); 
+        setUser(response.data.user); 
       } catch (error) {
-        // Kalau gagal/tidak ada token, lempar balik ke Login User
+        console.error("Auth Failed:", error);
+        localStorage.removeItem('token');
         window.location.href = 'http://localhost:5173/login';
       } finally {
         setIsLoading(false);
       }
     };
-
     initAuth();
   }, []);
 
+  // --- FUNGSI LOGOUT (Wajib ada!) ---
+  const logout = async () => {
+    try {
+      await logoutApi(); // Panggil API backend
+    } catch (err) {
+      console.warn("Logout server fail", err);
+    } finally {
+      // Selalu bersihkan lokal data & redirect
+      localStorage.removeItem('token');
+      setUser(null);
+      window.location.href = 'http://localhost:5173/login';
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading }}>
-      {!isLoading ? children : <div>Loading...</div>}
+    // Masukkan 'logout' ke dalam value Provider
+    <AuthContext.Provider value={{ user, isLoading, logout }}>
+      {!isLoading ? children : (
+        <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
+            Memuat Sistem Kasir...
+        </div>
+      )}
     </AuthContext.Provider>
   );
 };
