@@ -35,12 +35,22 @@ const AntrianKonfirmasiPage = () => {
     
     try {
       await confirmCashPaymentApi(orderUuid);
-      // Hapus kartu dari UI
+      // Sukses: Hapus dari list
       setOrders(prevOrders => prevOrders.filter(o => o.uuid !== orderUuid));
+      alert("Pembayaran berhasil dikonfirmasi!"); // Feedback sukses
       
     } catch (err) {
-      alert(`Gagal mengonfirmasi pesanan ${orderUuid}. Coba lagi.`);
       console.error(err);
+      
+      // Tangkap pesan error dari backend
+      const errorMessage = err.response?.data?.detail || "Gagal mengonfirmasi pesanan.";
+      alert(`Gagal: ${errorMessage}`);
+
+      // Jika errornya karena Kadaluarsa atau Sudah Dibayar, hapus saja dari tampilan
+      if (err.response?.status === 400) {
+         // Opsional: Hapus kartu dari layar agar kasir tidak bingung
+         setOrders(prevOrders => prevOrders.filter(o => o.uuid !== orderUuid));
+      }
     } finally {
       setLoadingOrders(prev => prev.filter(id => id !== orderUuid));
     }

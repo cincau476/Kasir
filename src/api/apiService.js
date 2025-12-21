@@ -45,7 +45,8 @@ export const createPosCashOrder = (orderData) => {
 
 // 3. AntrianKonfirmasiPage
 export const getAwaitingCashOrders = () => {
-  return api.get('orders/?status=AWAITING_PAYMENT&payment_method=CASH');
+  // TAMBAHKAN 'all/' DI SINI
+  return api.get('orders/all/?status=AWAITING_PAYMENT&payment_method=CASH');
 };
 
 // 3. AntrianKonfirmasiPage

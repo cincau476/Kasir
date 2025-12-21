@@ -51,19 +51,21 @@ const DashboardPage = () => {
   const stats = [
     {
       title: 'Total Konfirmasi Tunai Hari Ini',
-      value: formatRupiah(data.stats_today.total_revenue_cash),
+      // PERBAIKAN: Tambahkan ?. dan || 0
+      value: formatRupiah(data?.stats_today?.total_revenue_cash || 0),
       icon: DollarSign,
-      valueColor: 'text-accent-orange', // Warna Oren
+      valueColor: 'text-accent-orange', 
     },
     {
       title: 'Jumlah Pesanan Dikonfirmasi',
-      value: data.stats_today.total_orders_confirmed,
+      // PERBAIKAN: Gunakan ?. agar tidak error jika data belum siap
+      value: data?.stats_today?.completed || 0, // Sesuaikan field backend (misal: 'completed' atau 'preparing')
       icon: ShoppingCart,
       valueColor: 'text-gray-900',
     },
     {
       title: 'Pesanan Menunggu Konfirmasi',
-      value: data.stats_today.pending_confirmation,
+      value: data?.stats_today?.pending || 0,
       icon: Clock,
       valueColor: 'text-gray-900',
     },
