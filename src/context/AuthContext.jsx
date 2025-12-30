@@ -1,73 +1,40 @@
-// src/context/AuthContext.jsx
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { checkAuth, logout as logoutApi } from '../api/apiService'; 
+// src/context/AuthContext.jsx (Portal Kasir)
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Ambil data dengan key khusus kasir
+  const initialToken = localStorage.getItem('kasir_token');
+  const initialUser = localStorage.getItem('kasir_user') 
+    ? JSON.parse(localStorage.getItem('kasir_user')) 
+    : null;
 
-  // Fungsi dinamis untuk mendapatkan URL Login (agar otomatis menyesuaikan VM/Lokal)
-  const getLoginUrl = () => {
-    // Jika di production (VM), arahkan ke kantinku.com/login
-    // Jika di development, arahkan ke localhost:5173/login
-    return window.location.hostname === 'localhost' 
-      ? 'http://localhost:5173/login' 
-      : 'https://www.kantinku.com/login';
-  };
+  const [token, setToken] = useState(initialToken);
+  const [user, setUser] = useState(initialUser);
 
-  useEffect(() => {
-    const initAuth = async () => {
-      // 1. Tangkap Token URL
-      const params = new URLSearchParams(window.location.search);
-      const tokenFromUrl = params.get('token');
-      if (tokenFromUrl) {
-        localStorage.setItem('token', tokenFromUrl);
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
+  // LOGIN: Simpan data ke state dan localStorage dengan key khusus
+  const login = useCallback((newToken, userData) => {
+    localStorage.setItem('kasir_token', newToken); // MENGGUNAKAN kasir_token
+    localStorage.setItem('kasir_user', JSON.stringify(userData));
+    setToken(newToken);
+    setUser(userData);
+  }, []); 
 
-      // 2. Cek Validitas
-      const token = localStorage.getItem('token');
-      if (!token) {
-        window.location.href = getLoginUrl();
-        return;
-      }
-
-      try {
-        const response = await checkAuth(); 
-        setUser(response.data.user); 
-      } catch (error) {
-        console.error("Auth Failed:", error);
-        localStorage.removeItem('token');
-        window.location.href = getLoginUrl();
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    initAuth();
+  // LOGOUT: Hapus data spesifik kasir
+  const logout = useCallback(() => {
+    localStorage.removeItem('kasir_token'); // HAPUS kasir_token
+    localStorage.removeItem('kasir_user');
+    setToken(null);
+    setUser(null);
+    
+    // Arahkan ke domain utama
+    window.location.href = 'https://www.kantinku.com/login'; 
   }, []);
 
-  const logout = async () => {
-    try {
-      await logoutApi(); 
-    } catch (err) {
-      console.warn("Logout server fail", err);
-    } finally {
-      localStorage.removeItem('token');
-      setUser(null);
-      // Menggunakan URL dinamis
-      window.location.href = getLoginUrl();
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ user, isLoading, logout }}>
-      {!isLoading ? children : (
-        <div className="flex h-screen items-center justify-center bg-gray-900 text-white">
-            Memuat Sistem...
-        </div>
-      )}
+    <AuthContext.Provider value={{ token, user, login, logout, isAuthenticated: !!token }}>
+      {children}
     </AuthContext.Provider>
   );
 };
