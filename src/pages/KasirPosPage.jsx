@@ -1,31 +1,32 @@
+// src/pages/KasirPosPage.jsx
 import React, { useState, useEffect } from 'react';
+import Layout from '../components/Layout';
 import StandSelector from '../components/StandSelector';
 import MenuGrid from '../components/MenuGrid';
 import Cart from '../components/Cart';
 import { getPosStands, getPosMenusByStandId, createPosCashOrder } from '../api/apiService';
+import { FiShoppingCart, FiChevronUp, FiChevronDown, FiLoader } from 'react-icons/fi';
 
 const KasirPosPage = () => {
-  // State untuk data dari API
+  // --- STATE DATA ---
   const [stands, setStands] = useState([]);
   const [menus, setMenus] = useState([]);
   const [selectedStandId, setSelectedStandId] = useState(null);
-  
-  // State untuk keranjang
   const [cart, setCart] = useState([]);
   
-  // State untuk UI
+  // --- STATE UI & RESPONSIVE ---
   const [loadingStands, setLoadingStands] = useState(true);
   const [loadingMenus, setLoadingMenus] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [isCartExpanded, setIsCartExpanded] = useState(false);
 
-  // 1. Ambil daftar stand saat halaman dimuat
+  // 1. Ambil daftar stand
   useEffect(() => {
     const fetchStands = async () => {
       try {
         setLoadingStands(true);
         const response = await getPosStands();
         setStands(response.data);
-        // Otomatis pilih stand pertama
         if (response.data.length > 0) {
           setSelectedStandId(response.data[0].id);
         }
@@ -38,10 +39,9 @@ const KasirPosPage = () => {
     fetchStands();
   }, []);
 
-  // 2. Ambil menu setiap kali 'selectedStandId' berubah
+  // 2. Ambil menu setiap kali stand berubah
   useEffect(() => {
     if (!selectedStandId) return;
-
     const fetchMenus = async () => {
       try {
         setLoadingMenus(true);
@@ -57,132 +57,152 @@ const KasirPosPage = () => {
     fetchMenus();
   }, [selectedStandId]);
 
-  // --- Fungsi untuk Keranjang ---
-
-  // Menambah item ke keranjang
+  // --- LOGIKA KERANJANG ---
   const handleAddItemToCart = (item) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
-      
-      // Jika item sudah ada, tambah qty
       if (existingItem) {
         return prevCart.map(cartItem =>
-          cartItem.id === item.id
-            ? { ...cartItem, qty: cartItem.qty + 1 }
-            : cartItem
+          cartItem.id === item.id ? { ...cartItem, qty: cartItem.qty + 1 } : cartItem
         );
       }
-      // Jika item baru, tambahkan ke keranjang
       return [...prevCart, { ...item, qty: 1 }];
     });
   };
 
-  // Update kuantitas (bisa + atau -)
   const handleUpdateQty = (itemId, newQty) => {
     if (newQty <= 0) {
-      // Hapus jika qty 0 atau kurang
-      handleRemoveItem(itemId);
+      setCart((prevCart) => prevCart.filter(item => item.id !== itemId));
       return;
     }
     setCart((prevCart) =>
-      prevCart.map(item =>
-        item.id === itemId ? { ...item, qty: newQty } : item
-      )
+      prevCart.map(item => item.id === itemId ? { ...item, qty: newQty } : item)
     );
   };
 
-  // Hapus item dari keranjang
   const handleRemoveItem = (itemId) => {
     setCart((prevCart) => prevCart.filter(item => item.id !== itemId));
   };
 
-  // Submit pesanan
   const handleSubmitOrder = async () => {
+    if (cart.length === 0) return;
     setLoadingSubmit(true);
     try {
-      // PERBAIKAN:
-      // Susun data sesuai format yang diharapkan backend (dari komentar apiService.js)
-      // JANGAN kirim 'total'
       const orderData = {
-        tenant: selectedStandId,        // 'tenant' adalah ID stand
-        payment_method: "CASH",       // Sesuai alur "Bayar Tunai"
+        tenant: selectedStandId,
+        payment_method: "CASH",
         items: cart.map(item => ({
-          menu_item: item.id,       // 'menu_item' adalah ID menu
+          menu_item: item.id,
           qty: item.qty
-          // Jika Anda punya varian, tambahkan 'variants' di sini
         }))
-        // 'total' TELAH DIHAPUS. Backend WAJIB menghitung ulang.
       };
-
-      // Kirim data yang sudah bersih ke API
       await createPosCashOrder(orderData);
-      
       alert('Pesanan berhasil dibuat!');
-      setCart([]); // Kosongkan keranjang
+      setCart([]);
+      setIsCartExpanded(false);
     } catch (err) {
       alert('Gagal membuat pesanan. Coba lagi.');
-      console.error(err);
     } finally {
       setLoadingSubmit(false);
     }
   };
 
-  // --- Render ---
-
+  // --- RENDER ---
   if (loadingStands) {
-    return <div className="text-center p-10">Memuat data kasir...</div>;
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-100">
+        <FiLoader className="w-8 h-8 animate-spin text-orange-600" />
+      </div>
+    );
   }
 
-  const selectedStand = stands.find(s => s.id === selectedStandId);
+  const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Kasir POS</h1>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+    <Layout>
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] bg-gray-100 overflow-hidden relative">
         
-        {/* Kolom 1: Stand */}
-        <div className="lg:col-span-1">
-          <StandSelector 
-            stands={stands}
-            selectedStandId={selectedStandId}
-            onSelectStand={(id) => {
-              setSelectedStandId(id);
-              setCart([]); // Kosongkan keranjang saat ganti stand
-            }}
-          />
-        </div>
-        
-        {/* Kolom 2: Menu */}
-        <div className="lg:col-span-1">
-          {loadingMenus ? (
-            <p>Memuat menu...</p>
-          ) : (
-            <>
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                Menu {selectedStand?.name}
-              </h2>
-              <MenuGrid 
-                menus={menus} 
-                onAddItem={handleAddItemToCart} 
-              />
-            </>
-          )}
-        </div>
-        
-        {/* Kolom 3: Keranjang */}
-        <div className="lg:col-span-1 lg:sticky lg:top-24">
-          <Cart 
-            items={cart}
-            onUpdateQty={handleUpdateQty}
-            onRemoveItem={handleRemoveItem}
-            onSubmit={handleSubmitOrder}
-            loadingSubmit={loadingSubmit}
-          />
+        {/* AREA KIRI: SELEKTOR STAND & MENU GRID */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Header Bar */}
+          <div className="p-4 bg-white border-b border-gray-200 shadow-sm z-10">
+            <StandSelector 
+              stands={stands}
+              selectedStandId={selectedStandId}
+              onSelectStand={(id) => {
+                setSelectedStandId(id);
+                setCart([]); // Reset cart jika ganti stand (mencegah cross-tenant order)
+              }}
+            />
+          </div>
+
+          {/* List Menu - Scrollable */}
+          <div className="flex-1 overflow-y-auto p-4 pb-32 lg:pb-6">
+            <div className="max-w-7xl mx-auto">
+              {loadingMenus ? (
+                <div className="flex justify-center p-10"><FiLoader className="animate-spin" /></div>
+              ) : (
+                <MenuGrid menus={menus} onAddItem={handleAddItemToCart} />
+              )}
+            </div>
+          </div>
         </div>
 
+        {/* AREA KANAN / BOTTOM SHEET: KERANJANG */}
+        <div 
+          className={`
+            fixed bottom-0 left-0 right-0 bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] z-50 
+            transition-all duration-300 ease-in-out border-t border-gray-200
+            lg:relative lg:w-[400px] lg:h-full lg:translate-y-0 lg:shadow-none lg:border-l lg:border-t-0
+            ${isCartExpanded ? 'h-[85vh] rounded-t-3xl' : 'h-20 lg:h-full'}
+          `}
+        >
+          {/* Mobile Cart Header (Toggle Bar) */}
+          <div 
+            onClick={() => setIsCartExpanded(!isCartExpanded)}
+            className="lg:hidden h-20 px-6 flex justify-between items-center bg-orange-600 text-white cursor-pointer rounded-t-xl sm:rounded-none"
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <FiShoppingCart className="w-6 h-6" />
+                {cart.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-white text-orange-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+                    {cart.length}
+                  </span>
+                )}
+              </div>
+              <div>
+                <p className="text-xs opacity-80 uppercase font-bold">Total Tagihan</p>
+                <p className="font-bold text-lg">Rp {cartTotal.toLocaleString('id-ID')}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-orange-700/50 px-3 py-1.5 rounded-lg">
+              <span className="text-sm font-bold">{isCartExpanded ? 'Tutup' : 'Detail'}</span>
+              {isCartExpanded ? <FiChevronDown /> : <FiChevronUp />}
+            </div>
+          </div>
+
+          {/* Cart Content (Desktop & Mobile Expanded) */}
+          <div className={`h-[calc(100%-80px)] lg:h-full overflow-hidden ${!isCartExpanded ? 'hidden lg:block' : 'block'}`}>
+            <Cart 
+              items={cart}
+              onUpdateQty={handleUpdateQty}
+              onRemoveItem={handleRemoveItem}
+              onSubmit={handleSubmitOrder}
+              loadingSubmit={loadingSubmit}
+            />
+          </div>
+        </div>
+
+        {/* Backdrop Overlay (Hanya di Mobile saat Cart Expand) */}
+        {isCartExpanded && (
+          <div 
+            className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+            onClick={() => setIsCartExpanded(false)}
+          />
+        )}
       </div>
-    </div>
+    </Layout>
   );
 };
 
