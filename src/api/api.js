@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // Gunakan VITE_API_URL, fallback ke localhost jika tidak ada
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/';
+const API_URL = import.meta.env.VITE_API_BASE_URL ;
 
 const apiClient = axios.create({
   baseURL: API_URL,
