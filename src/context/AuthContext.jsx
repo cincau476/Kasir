@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
     // Jika di development, arahkan ke localhost:5173/login
     return window.location.hostname === 'localhost' 
       ? 'http://localhost:5173/login' 
-      : 'https://kantinku.com/login';
+      : 'https://www.kantinku.com/login';
   };
 
   useEffect(() => {
