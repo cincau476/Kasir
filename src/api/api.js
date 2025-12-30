@@ -1,22 +1,28 @@
 // File: cincau476/kasir/Kasir-728d3a8c5898c7c2af7199da371dd810b3222865/src/api/api.js
 import axios from 'axios';
 
-// Gunakan VITE_API_URL, fallback ke localhost jika tidak ada
-const API_URL = import.meta.env.VITE_API_BASE_URL ;
+// Menghapus trailing slash agar penggabungan URL bersih
+const API_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 
 const apiClient = axios.create({
   baseURL: API_URL,
   withCredentials: true,
 });
 
-// --- WAJIB TAMBAH INI SUPAYA TOKEN TERBAWA ---
+/**
+ * Interceptor untuk menyisipkan kasir_token
+ */
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  // MENGGUNAKAN kasir_token AGAR TIDAK BENTROK
+  const token = localStorage.getItem('kasir_token');
+  
   if (token) {
+    // Gunakan format 'Token' (dengan T kapital) sesuai standar Django Authtoken
     config.headers.Authorization = `Token ${token}`;
   }
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
-// ---------------------------------------------
 
 export default apiClient;
