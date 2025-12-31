@@ -13,11 +13,8 @@ const apiClient = axios.create({
  * Interceptor untuk menyisipkan kasir_token
  */
 apiClient.interceptors.request.use((config) => {
-  // MENGGUNAKAN kasir_token AGAR TIDAK BENTROK
-  const token = localStorage.getItem('kasir_token');
-  
+  const token = sessionStorage.getItem('kasir_token'); // Ubah ke sessionStorage
   if (token) {
-    // Gunakan format 'Token' (dengan T kapital) sesuai standar Django Authtoken
     config.headers.Authorization = `Token ${token}`;
   }
   return config;
