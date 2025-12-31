@@ -1,6 +1,5 @@
 // src/pages/KasirPosPage.jsx
 import React, { useState, useEffect } from 'react';
-// import Layout from '../components/Layout'; // 1. HAPUS IMPORT INI
 import StandSelector from '../components/StandSelector';
 import MenuGrid from '../components/MenuGrid';
 import Cart from '../components/Cart';
@@ -14,22 +13,35 @@ const KasirPosPage = () => {
   const [selectedStandId, setSelectedStandId] = useState(null);
   const [cart, setCart] = useState([]);
   
-  // --- STATE UI & RESPONSIVE ---
+  // --- STATE UI ---
   const [loadingStands, setLoadingStands] = useState(true);
   const [loadingMenus, setLoadingMenus] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [isCartExpanded, setIsCartExpanded] = useState(false);
 
-  // 1. Ambil daftar stand
+  // 1. PERBAIKAN FETCH STANDS (Handle Pagination)
   useEffect(() => {
     const fetchStands = async () => {
       try {
         setLoadingStands(true);
         const response = await getPosStands();
-        setStands(response.data);
-        if (response.data.length > 0) {
-          setSelectedStandId(response.data[0].id);
+        console.log("Stands Data:", response.data); // Debugging
+
+        // Cek apakah data dibungkus dalam 'results' (Pagination Django)
+        const dataArray = response.data.results || response.data;
+
+        // Pastikan bentuknya Array sebelum di-set
+        if (Array.isArray(dataArray)) {
+            setStands(dataArray);
+            // Set stand pertama sebagai default jika ada
+            if (dataArray.length > 0) {
+              setSelectedStandId(dataArray[0].id);
+            }
+        } else {
+            setStands([]);
+            console.error("Format data stands salah, bukan array:", response.data);
         }
+
       } catch (err) {
         console.error("Gagal memuat stand:", err);
       } finally {
@@ -39,14 +51,19 @@ const KasirPosPage = () => {
     fetchStands();
   }, []);
 
-  // 2. Ambil menu setiap kali stand berubah
+  // 2. PERBAIKAN FETCH MENUS (Handle Pagination)
   useEffect(() => {
     if (!selectedStandId) return;
     const fetchMenus = async () => {
       try {
         setLoadingMenus(true);
         const response = await getPosMenusByStandId(selectedStandId);
-        setMenus(response.data);
+        console.log("Menus Data:", response.data); // Debugging
+        
+        // Cek pagination juga disini
+        const dataArray = response.data.results || response.data;
+        
+        setMenus(Array.isArray(dataArray) ? dataArray : []);
       } catch (err) {
         console.error("Gagal memuat menu:", err);
         setMenus([]);
@@ -57,7 +74,7 @@ const KasirPosPage = () => {
     fetchMenus();
   }, [selectedStandId]);
 
-  // --- LOGIKA KERANJANG ---
+  // --- LOGIKA KERANJANG (TIDAK ADA PERUBAHAN) ---
   const handleAddItemToCart = (item) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
@@ -101,7 +118,8 @@ const KasirPosPage = () => {
       setCart([]);
       setIsCartExpanded(false);
     } catch (err) {
-      alert('Gagal membuat pesanan. Coba lagi.');
+      console.error(err);
+      alert('Gagal membuat pesanan.');
     } finally {
       setLoadingSubmit(false);
     }
@@ -118,17 +136,15 @@ const KasirPosPage = () => {
 
   const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
-  // 2. HAPUS PEMBUNGKUS <Layout> DI BAWAH INI
   return (
-    // <Layout> <-- INI PENYEBABNYA
       <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] bg-gray-100 overflow-hidden relative">
         
         {/* AREA KIRI: SELEKTOR STAND & MENU GRID */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          {/* Header Bar */}
           <div className="p-4 bg-white border-b border-gray-200 shadow-sm z-10">
+            {/* Pastikan stands tidak null saat dikirim */}
             <StandSelector 
-              stands={stands}
+              stands={stands || []}
               selectedStandId={selectedStandId}
               onSelectStand={(id) => {
                 setSelectedStandId(id);
@@ -137,19 +153,18 @@ const KasirPosPage = () => {
             />
           </div>
 
-          {/* List Menu - Scrollable */}
           <div className="flex-1 overflow-y-auto p-4 pb-32 lg:pb-6">
             <div className="max-w-7xl mx-auto">
               {loadingMenus ? (
-                <div className="flex justify-center p-10"><FiLoader className="animate-spin" /></div>
+                <div className="flex justify-center p-10"><FiLoader className="animate-spin text-orange-500" /></div>
               ) : (
-                <MenuGrid menus={menus} onAddItem={handleAddItemToCart} />
+                <MenuGrid menus={menus || []} onAddItem={handleAddItemToCart} />
               )}
             </div>
           </div>
         </div>
 
-        {/* AREA KANAN / BOTTOM SHEET: KERANJANG */}
+        {/* AREA KANAN: KERANJANG */}
         <div 
           className={`
             fixed bottom-0 left-0 right-0 bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] z-50 
@@ -158,7 +173,6 @@ const KasirPosPage = () => {
             ${isCartExpanded ? 'h-[85vh] rounded-t-3xl' : 'h-20 lg:h-full'}
           `}
         >
-          {/* Mobile Cart Header (Toggle Bar) */}
           <div 
             onClick={() => setIsCartExpanded(!isCartExpanded)}
             className="lg:hidden h-20 px-6 flex justify-between items-center bg-orange-600 text-white cursor-pointer rounded-t-xl sm:rounded-none"
@@ -173,7 +187,7 @@ const KasirPosPage = () => {
                 )}
               </div>
               <div>
-                <p className="text-xs opacity-80 uppercase font-bold">Total Tagihan</p>
+                <p className="text-xs opacity-80 uppercase font-bold">Total</p>
                 <p className="font-bold text-lg">Rp {cartTotal.toLocaleString('id-ID')}</p>
               </div>
             </div>
@@ -183,7 +197,6 @@ const KasirPosPage = () => {
             </div>
           </div>
 
-          {/* Cart Content (Desktop & Mobile Expanded) */}
           <div className={`h-[calc(100%-80px)] lg:h-full overflow-hidden ${!isCartExpanded ? 'hidden lg:block' : 'block'}`}>
             <Cart 
               items={cart}
@@ -195,7 +208,6 @@ const KasirPosPage = () => {
           </div>
         </div>
 
-        {/* Backdrop Overlay (Hanya di Mobile saat Cart Expand) */}
         {isCartExpanded && (
           <div 
             className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
@@ -203,7 +215,6 @@ const KasirPosPage = () => {
           />
         )}
       </div>
-    // </Layout> <-- INI PENYEBABNYA
   );
 };
 
