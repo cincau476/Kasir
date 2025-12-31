@@ -1,6 +1,6 @@
 // src/pages/KasirPosPage.jsx
 import React, { useState, useEffect } from 'react';
-import Layout from '../components/Layout';
+// import Layout from '../components/Layout'; // 1. HAPUS IMPORT INI
 import StandSelector from '../components/StandSelector';
 import MenuGrid from '../components/MenuGrid';
 import Cart from '../components/Cart';
@@ -118,8 +118,9 @@ const KasirPosPage = () => {
 
   const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
+  // 2. HAPUS PEMBUNGKUS <Layout> DI BAWAH INI
   return (
-    <Layout>
+    // <Layout> <-- INI PENYEBABNYA
       <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] bg-gray-100 overflow-hidden relative">
         
         {/* AREA KIRI: SELEKTOR STAND & MENU GRID */}
@@ -131,7 +132,7 @@ const KasirPosPage = () => {
               selectedStandId={selectedStandId}
               onSelectStand={(id) => {
                 setSelectedStandId(id);
-                setCart([]); // Reset cart jika ganti stand (mencegah cross-tenant order)
+                setCart([]); 
               }}
             />
           </div>
@@ -202,7 +203,7 @@ const KasirPosPage = () => {
           />
         )}
       </div>
-    </Layout>
+    // </Layout> <-- INI PENYEBABNYA
   );
 };
 
