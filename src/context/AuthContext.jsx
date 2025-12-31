@@ -11,11 +11,15 @@ export const AuthProvider = ({ children }) => {
 
   // Helper untuk mendapatkan URL login yang benar sesuai environment
   const getLoginUrl = () => {
+    // window.location.origin akan mengambil "https://192.168.113.113" 
+    // atau "https://www.kantinku.com" secara otomatis sesuai apa yang dibuka user
+    const baseUrl = window.location.origin;
+    
+    // Jika di localhost, arahkan ke port 5173, jika tidak, arahkan ke path /login di host saat ini
     return window.location.hostname === 'localhost' 
       ? 'http://localhost:5173/login' 
-      : 'https://www.kantinku.com/login';
+      : `${baseUrl}/login`;
   };
-
   useEffect(() => {
     const initAuth = async () => {
       // 1. Tangkap Token dari URL (saat redirect dari portal utama)
