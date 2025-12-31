@@ -4,31 +4,29 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // Ambil data dengan key khusus kasir
-  const initialToken = localStorage.getItem('kasir_token');
-  const initialUser = localStorage.getItem('kasir_user') 
-    ? JSON.parse(localStorage.getItem('kasir_user')) 
-    : null;
+  // Cek token dari URL terlebih dahulu (untuk handle redirect)
+  const queryParams = new URLSearchParams(window.location.search);
+  const tokenFromUrl = queryParams.get('token');
+  if (tokenFromUrl) {
+    sessionStorage.setItem('kasir_token', tokenFromUrl);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
 
-  const [token, setToken] = useState(initialToken);
-  const [user, setUser] = useState(initialUser);
+  const [token, setToken] = useState(sessionStorage.getItem('kasir_token'));
+  const [user, setUser] = useState(JSON.parse(sessionStorage.getItem('kasir_user')));
 
-  // LOGIN: Simpan data ke state dan localStorage dengan key khusus
   const login = useCallback((newToken, userData) => {
-    localStorage.setItem('kasir_token', newToken); // MENGGUNAKAN kasir_token
-    localStorage.setItem('kasir_user', JSON.stringify(userData));
+    sessionStorage.setItem('kasir_token', newToken);
+    sessionStorage.setItem('kasir_user', JSON.stringify(userData));
     setToken(newToken);
     setUser(userData);
   }, []); 
 
-  // LOGOUT: Hapus data spesifik kasir
   const logout = useCallback(() => {
-    localStorage.removeItem('kasir_token'); // HAPUS kasir_token
-    localStorage.removeItem('kasir_user');
+    sessionStorage.removeItem('kasir_token');
+    sessionStorage.removeItem('kasir_user');
     setToken(null);
     setUser(null);
-    
-    // Arahkan ke domain utama
     window.location.href = 'https://www.kantinku.com/login'; 
   }, []);
 
