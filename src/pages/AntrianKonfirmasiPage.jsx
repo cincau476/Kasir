@@ -57,8 +57,15 @@ const AntrianKonfirmasiPage = () => {
   };
   
   // --- 3. Logika untuk memfilter pesanan ---
-  const filteredOrders = orders.filter(order =>
-    order.references_code.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredOrders = orders.filter(order => {
+    // Filter 1: Pencarian Kode
+    const matchesSearch = order.references_code.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Filter 2: Sembunyikan yang sudah expired secara visual (Real-time)
+    // Asumsi: order.expired_at dalam format ISO string (e.g. "2026-01-02T10:00:00Z")
+    const isNotExpired = new Date(order.expired_at) > new Date();
+
+    return matchesSearch && isNotExpired;
   );
   // --- ------------------------------------ ---
 
