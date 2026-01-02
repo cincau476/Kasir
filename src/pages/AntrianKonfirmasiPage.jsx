@@ -66,7 +66,7 @@ const AntrianKonfirmasiPage = () => {
     const isNotExpired = new Date(order.expired_at) > new Date();
 
     return matchesSearch && isNotExpired;
-  );
+  });
   // --- ------------------------------------ ---
 
   if (loading) {
