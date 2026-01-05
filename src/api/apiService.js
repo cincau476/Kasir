@@ -43,14 +43,12 @@ export const createPosCashOrder = (orderData) => {
   return api.post('orders/create/', orderData);
 };
 
-// 3. AntrianKonfirmasiPage
-const response = await getAwaitingCashOrders({ 
-    status: 'pending', // Biasanya default Django adalah 'pending'
-    payment_method: 'CASH' 
-});
+export const getAwaitingCashOrders = () => {
+  // Gunakan status 'pending' sesuai saran sebelumnya agar data muncul
+  return api.get('orders/all/?status=pending&payment_method=CASH');
+};
 
 export const confirmCashPaymentApi = (orderUuid) => {
-  // Gunakan endpoint status/ sesuai urls.py backend kamu
   return api.post(`orders/${orderUuid}/status/`, {
     status: 'PAID' 
   });
