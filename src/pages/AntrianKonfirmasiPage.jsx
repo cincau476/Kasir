@@ -23,9 +23,9 @@ const AntrianKonfirmasiPage = () => {
   
         // 2. Kirim stand_id sebagai parameter filter
         const response = await getAwaitingCashOrders({
-          status: 'pending',
+          status: 'AWAITING_PAYMENT',
           payment_method: 'CASH',
-          stand_id: storedStandId 
+          stand_id: storedStandId
         });
   
         // 3. Pastikan penempatan data benar (Axios biasanya di response.data)
