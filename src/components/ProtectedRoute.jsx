@@ -6,23 +6,18 @@ import { useAuth } from '../context/AuthContext';
 const ProtectedRoute = ({ allowedRoles }) => {
   const { user, token, isLoading } = useAuth();
 
+  // 1️⃣ Tunggu auth benar-benar siap
   if (isLoading) {
-    return null; // Spinner sudah ditangani di AuthContext
-  }
-
-  // Jika tidak ada token atau user, arahkan ke login utama
-  if (!token || !user) {
-    const loginUrl = window.location.hostname === 'localhost' 
-      ? 'http://localhost:5173/login' 
-      : 'https://www.kantinku.com/login';
-    
-    window.location.href = loginUrl;
     return null;
   }
 
-  // Cek Role (Opsional, jika kasir punya role spesifik 'cashier')
+  // 2️⃣ Jika belum login, redirect DENGAN REACT ROUTER
+  if (!token || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // 3️⃣ Cek role
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    // Jika role salah, kembalikan ke dashboard atau halaman error
     return <Navigate to="/" replace />;
   }
 
