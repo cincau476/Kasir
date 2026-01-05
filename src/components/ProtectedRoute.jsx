@@ -13,8 +13,10 @@ const ProtectedRoute = ({ allowedRoles }) => {
 
   // 2️⃣ Jika belum login, redirect DENGAN REACT ROUTER
   if (!token || !user) {
-    return <Navigate to="/login" replace />;
+    window.location.href = 'https://www.kantinku.com/login';
+    return null;
   }
+
 
   // 3️⃣ Cek role
   if (allowedRoles && !allowedRoles.includes(user.role)) {
