@@ -43,9 +43,9 @@ export const createPosCashOrder = (orderData) => {
   return api.post('orders/create/', orderData);
 };
 
-export const getAwaitingCashOrders = () => {
-  // Gunakan status 'pending' sesuai saran sebelumnya agar data muncul
-  return api.get('orders/all/?status=pending&payment_method=CASH');
+export const getAwaitingCashOrders = (params) => {
+  // Biarkan parameter dikirim secara dinamis (termasuk stand_id)
+  return api.get('orders/all/', { params });
 };
 
 export const confirmCashPaymentApi = (orderUuid) => {
