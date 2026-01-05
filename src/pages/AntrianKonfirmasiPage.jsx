@@ -18,8 +18,18 @@ const AntrianKonfirmasiPage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await getAwaitingCashOrders();
-        setOrders(response.data);
+        // 1. Ambil stand_id dari localStorage yang disimpan saat pilih stand di POS
+        const storedStandId = localStorage.getItem('selectedStandId');
+  
+        // 2. Kirim stand_id sebagai parameter filter
+        const response = await getAwaitingCashOrders({
+          status: 'pending',
+          payment_method: 'CASH',
+          stand_id: storedStandId 
+        });
+  
+        // 3. Pastikan penempatan data benar (Axios biasanya di response.data)
+        setOrders(response.data || response); 
       } catch (err) {
         setError("Gagal memuat antrian.");
         console.error(err);
