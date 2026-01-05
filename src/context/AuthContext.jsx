@@ -9,50 +9,59 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Helper untuk mendapatkan URL login yang benar sesuai environment
   const getLoginUrl = () => {
-    // window.location.origin akan mengambil "https://192.168.113.113" 
-    // atau "https://www.kantinku.com" secara otomatis sesuai apa yang dibuka user
     const baseUrl = window.location.origin;
-    
-    // Jika di localhost, arahkan ke port 5173, jika tidak, arahkan ke path /login di host saat ini
     return window.location.hostname === 'localhost' 
       ? 'http://localhost:5173/login' 
-      : `${baseUrl}/login`;
+      : `${baseUrl}/login`; // Sesuaikan jika login page ada di domain utama
   };
+
   useEffect(() => {
     const initAuth = async () => {
-      // 1. Tangkap Token dari URL (saat redirect dari portal utama)
+      // 1. Prioritas: Ambil token dari URL (Redirect dari login portal)
       const params = new URLSearchParams(window.location.search);
       const tokenFromUrl = params.get('token');
       
+      let activeToken = null;
+
       if (tokenFromUrl) {
+        activeToken = tokenFromUrl;
         sessionStorage.setItem('kasir_token', tokenFromUrl);
-        // Hapus query param agar URL bersih
         window.history.replaceState({}, document.title, window.location.pathname);
+      } else {
+        // 2. Fallback: Ambil dari sessionStorage
+        activeToken = sessionStorage.getItem('kasir_token');
       }
 
-      // 2. Ambil token dari sessionStorage
-      const storedToken = sessionStorage.getItem('kasir_token');
-      
-      if (!storedToken) {
-        // Jangan redirect di sini, biarkan ProtectedRoute yang menangani
+      // Jika sama sekali tidak ada token
+      if (!activeToken) {
+        setToken(null);
+        setUser(null);
         setIsLoading(false);
         return;
       }
 
-      setToken(storedToken);
+      // Set token ke state segera
+      setToken(activeToken);
 
       try {
         // 3. Verifikasi token ke backend
         const response = await checkAuth();
-        setUser(response.data.user);
+        
+        // Validasi struktur data sebelum set user
+        if (response.data && response.data.user) {
+          setUser(response.data.user);
+        } else {
+          throw new Error("Format user tidak valid dari API");
+        }
+
       } catch (error) {
         console.error("Auth Failed:", error);
         sessionStorage.removeItem('kasir_token');
         sessionStorage.removeItem('kasir_user');
-        // Jika token tidak valid, baru kita lempar ke login
-        window.location.href = getLoginUrl();
+        setToken(null);
+        setUser(null);
+        // Biarkan ProtectedRoute yang menangani redirect
       } finally {
         setIsLoading(false);
       }
@@ -74,7 +83,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       console.warn("Logout server fail", err);
     } finally {
-      sessionStorage.clear(); // Bersihkan semua sesi
+      sessionStorage.clear();
       setToken(null);
       setUser(null);
       window.location.href = getLoginUrl();
@@ -83,11 +92,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ token, user, login, logout, isLoading, isAuthenticated: !!token }}>
-      {!isLoading ? children : (
-        <div className="flex h-screen items-center justify-center bg-gray-900 text-white font-medium">
-            Memuat Sistem Kasir...
-        </div>
-      )}
+      {children}
     </AuthContext.Provider>
   );
 };
