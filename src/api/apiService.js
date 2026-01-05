@@ -49,9 +49,12 @@ export const getAwaitingCashOrders = () => {
   return api.get('orders/all/?status=AWAITING_PAYMENT&payment_method=CASH');
 };
 
-// 3. AntrianKonfirmasiPage
 export const confirmCashPaymentApi = (orderUuid) => {
-  return api.post(`cashier/orders/${orderUuid}/confirm-cash/`);
+  // Gunakan endpoint 'status/' yang tersedia di backend
+  // Kita mengirim status 'PAID' (atau sesuaikan dengan status yang diterima backend kamu)
+  return api.post(`orders/${orderUuid}/status/`, {
+    status: 'PAID' 
+  });
 };
 
 // 4. LaporanKeuanganPage
