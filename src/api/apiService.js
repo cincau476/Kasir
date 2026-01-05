@@ -49,10 +49,10 @@ export const getAwaitingCashOrders = () => {
   return api.get('orders/all/?status=AWAITING_PAYMENT&payment_method=CASH');
 };
 
-export const confirmCashPayment = (orderUuid) => {
-  return request(`/orders/${orderUuid}/status/`, {
-    method: 'POST',
-    body: JSON.stringify({ status: 'PAID' })
+xport const confirmCashPaymentApi = (orderUuid) => {
+  // Gunakan endpoint status/ sesuai urls.py backend kamu
+  return api.post(`orders/${orderUuid}/status/`, {
+    status: 'PAID' 
   });
 };
 
