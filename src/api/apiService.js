@@ -44,7 +44,6 @@ export const createPosCashOrder = (orderData) => {
 };
 
 export const getAwaitingCashOrders = (params) => {
-  // Biarkan parameter dikirim secara dinamis (termasuk stand_id)
   return api.get('orders/all/', { params });
 };
 
