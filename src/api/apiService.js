@@ -48,9 +48,7 @@ export const getAwaitingCashOrders = (params) => {
 };
 
 export const confirmCashPaymentApi = (orderUuid) => {
-  return api.patch(`orders/${orderUuid}/status/`, {
-    status: 'PAID' 
-  });
+  return api.post(`cash/confirm/${orderUuid}/`);
 };
 
 // 4. LaporanKeuanganPage
