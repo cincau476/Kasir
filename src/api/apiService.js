@@ -1,65 +1,30 @@
-// File: cincau476/kasir/Kasir-728d3a8c5898c7c2af7199da371dd810b3222865/src/api/apiService.js
+// File: src/api/apiService.js
 import api from './api.js';
 
-// --- FUNGSI API BARU UNTUK AUTENTIKASI ---
+// --- FUNGSI API UNTUK AUTENTIKASI ---
+export const login = (username, password) => api.post('users/login/', { username, password });
+export const checkAuth = () => api.get('users/check-auth/');
+export const logout = () => api.post('users/logout/');
 
-export const login = (username, password) => {
-  return api.post('users/login/', {
-    username,
-    password,
-  });
-};
-
-export const checkAuth = () => {
-  // PERBAIKAN: Hapus '/' di awal agar tidak me-reset baseURL
-  // Menjadi: http://localhost:8000/api/users/check-auth/
-  return api.get('users/check-auth/');
-};
-
-export const logout = () => {
-  // PERBAIKAN: Hapus '/' di awal
-  return api.post('users/logout/');
-};
-
-// --- Fungsi API (Terhubung ke Backend) ---
+// --- FUNGSI KASIR (POS & DASHBOARD) ---
 
 // 1. DashboardPage
-export const getKasirDashboardSummary = () => {
-  return api.get('reports/summary/'); 
-};
+export const getKasirDashboardSummary = () => api.get('reports/summary/'); 
 
 // 2. KasirPosPage
-export const getPosStands = () => {
-  return api.get('tenants/stands/'); 
-};
+export const getPosStands = () => api.get('tenants/stands/'); 
+export const getPosMenusByStandId = (standId) => api.get(`tenants/stands/${standId}/menus/`);
+export const createPosCashOrder = (orderData) => api.post('orders/create/', orderData);
 
-// 2. KasirPosPage
-export const getPosMenusByStandId = (standId) => {
-  return api.get(`tenants/stands/${standId}/menus/`);
-};
-
-// 2. KasirPosPage
-export const createPosCashOrder = (orderData) => {
-  return api.post('orders/create/', orderData);
-};
-
-export const getAwaitingCashOrders = (params) => {
-  return api.get('orders/all/', { params });
-};
-
-export const confirmCashPaymentApi = (orderUuid) => {
-  return api.post(`cashier/cash/confirm/${orderUuid}/`);
-};
+// 3. Antrian / Konfirmasi Kasir
+export const getAwaitingCashOrders = (params) => api.get('orders/all/', { params });
+export const confirmCashPaymentApi = (orderUuid) => api.post(`cashier/cash/confirm/${orderUuid}/`);
 
 // 4. LaporanKeuanganPage
 export const getLaporanKeuangan = (paramsObject) => {
-  // PENTING: Definisikan variabel 'params' sebelum dipakai!
   const params = {
     periode: paramsObject.periode,
-    // Jika 'semua', jangan kirim stand_id agar backend mengambil semua data
     stand_id: paramsObject.stand === 'semua' ? undefined : paramsObject.stand
   };
-  
-  // Kirim request dengan params yang sudah dibuat di atas
   return api.get('reports/summary/', { params });
 };

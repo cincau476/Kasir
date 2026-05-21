@@ -17,9 +17,6 @@ const apiClient = axios.create({
   xsrfHeaderName: 'X-CSRFToken',
 });
 
-// ==========================================
-// ANTI-RACE CONDITION (MUTEX LOCK)
-// ==========================================
 let isRefreshing = false;
 let failedQueue = [];
 
@@ -38,10 +35,9 @@ const processQueue = (error, token = null) => {
 // REQUEST INTERCEPTOR (Otorisasi)
 // ==========================================
 apiClient.interceptors.request.use((config) => {
-  // SECURE CODING: Gunakan standard naming dan penyimpanan
-  const token = localStorage.getItem('access_token'); 
+  // PERBAIKAN 1: Gunakan sessionStorage dan 'kasir_token' (Klop dengan LoginPage utama)
+  const token = sessionStorage.getItem('kasir_token'); 
   if (token) {
-    // SECURE CODING: Sesuaikan dengan setting SimpleJWT Django ('Bearer')
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -50,21 +46,25 @@ apiClient.interceptors.request.use((config) => {
 });
 
 // ==========================================
-// RESPONSE INTERCEPTOR (Silent Refresh)
+// RESPONSE INTERCEPTOR (Silent Refresh & Pagination)
 // ==========================================
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // PERBAIKAN 2: Ekstrak '.results' otomatis agar tabel/list tidak kena error .map()
+    if (response.data && response.data.results !== undefined) {
+      response.data = response.data.results;
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
-    // Hindari loop tak terbatas jika request refresh itu sendiri yang gagal
     if (originalRequest.url.includes('/users/token/refresh/')) {
         return Promise.reject(error);
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
         
-        // JIKA SEDANG REFRESH: Antrekan request kasir (polling pesanan, dsb)
         if (isRefreshing) {
             return new Promise(function(resolve, reject) {
                 failedQueue.push({resolve, reject});
@@ -74,38 +74,36 @@ apiClient.interceptors.response.use(
             }).catch(err => Promise.reject(err));
         }
 
-        // JIKA BELUM REFRESH: Kunci gembok
         originalRequest._retry = true;
         isRefreshing = true;
 
         try {
-            // Meminta access_token baru via HttpOnly Cookie (refresh_token)
             const response = await axios.post(`${API_URL}/users/token/refresh/`, {}, {
                 withCredentials: true
             });
             
             const newAccessToken = response.data.access;
-            localStorage.setItem('access_token', newAccessToken);
+            // PERBAIKAN 1: Simpan pembaruan ke 'kasir_token'
+            sessionStorage.setItem('kasir_token', newAccessToken);
             
             apiClient.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
             originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
             
-            // Buka gembok dan jalankan ulang semua request yang mengantre
             processQueue(null, newAccessToken);
             return apiClient(originalRequest);
 
         } catch (refreshError) {
-            // Sesi kedaluwarsa sepenuhnya (lebih dari 1 hari) atau di-blacklist
             processQueue(refreshError, null);
-            localStorage.removeItem('access_token');
-            window.location.href = '/login'; 
+            // PERBAIKAN 1: Bersihkan token Kasir dan arahkan kembali ke Domain Utama
+            sessionStorage.removeItem('kasir_token');
+            sessionStorage.removeItem('kasir_user');
+            window.location.href = `${window.location.origin}/login`; 
             return Promise.reject(refreshError);
         } finally {
             isRefreshing = false;
         }
     }
     
-    // Jangan tampilkan detail error di console produksi
     if (import.meta.env.MODE !== 'production') {
       console.error('Kasir API Error:', error.response?.status, error.message);
     }
