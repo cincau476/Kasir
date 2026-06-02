@@ -28,3 +28,11 @@ export const getLaporanKeuangan = (paramsObject) => {
   };
   return api.get('reports/summary/', { params });
 };
+
+
+// === MFA Keamanan ===
+export const generateMfaSetup = () => apiClient.post('/users/mfa/setup/generate/');
+
+export const verifyMfaSetup = (otpCode) => apiClient.post('/users/mfa/setup/verify/', { 
+    otp_code: otpCode 
+});
