@@ -1,4 +1,8 @@
+// src/pages/DashboardPage.jsx
+
 import React, { useState, useEffect } from 'react';
+import MfaSetupModal from '../components/MfaSetupModal.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 import StatCard from '../components/StatCard';
 import TopStandChart from '../components/TopStandChart';
 import { getKasirDashboardSummary } from '../api/apiService';
@@ -16,6 +20,11 @@ const formatRupiah = (value) => {
 };
 
 const DashboardPage = () => {
+  // === State untuk MFA & Autentikasi ===
+  const { user } = useAuth();
+  const [isMfaOpen, setIsMfaOpen] = useState(false);
+
+  // === State untuk Data Dashboard ===
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -36,11 +45,15 @@ const DashboardPage = () => {
   }, []);
 
   if (loading) {
-    return <div className="text-center p-10">Memuat data...</div>;
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="text-center text-red-500 p-10">{error}</div>;
+    return <div className="text-center text-red-500 p-10 font-medium">{error}</div>;
   }
 
   if (!data) {
@@ -51,15 +64,13 @@ const DashboardPage = () => {
   const stats = [
     {
       title: 'Total Konfirmasi Tunai Hari Ini',
-      // PERBAIKAN: Tambahkan ?. dan || 0
       value: formatRupiah(data?.stats_today?.total_revenue_cash || 0),
       icon: DollarSign,
-      valueColor: 'text-accent-orange', 
+      valueColor: 'text-blue-600', 
     },
     {
       title: 'Jumlah Pesanan Dikonfirmasi',
-      // PERBAIKAN: Gunakan ?. agar tidak error jika data belum siap
-      value: data?.stats_today?.completed || 0, // Sesuaikan field backend (misal: 'completed' atau 'preparing')
+      value: data?.stats_today?.completed || 0,
       icon: ShoppingCart,
       valueColor: 'text-gray-900',
     },
@@ -72,8 +83,26 @@ const DashboardPage = () => {
   ];
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+    <div className="space-y-8 animate-fadeIn">
+      
+      {/* HEADER BESERTA TOMBOL MFA */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
+        
+        {/* Tombol Setup MFA Dinamis */}
+        {user && (
+          <button
+            onClick={() => setIsMfaOpen(true)}
+            className={`flex items-center gap-2 font-semibold text-sm px-4 py-2.5 rounded-xl transition-all shadow-sm border ${
+              user.is_mfa_enabled
+                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:shadow-green-500/20'
+                : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:shadow-red-500/20'
+            }`}
+          >
+            {user.is_mfa_enabled ? '✅ MFA Aktif (Reset)' : '⚠️ Aktifkan MFA'}
+          </button>
+        )}
+      </div>
       
       {/* Bagian 1: Kartu Statistik */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -89,9 +118,17 @@ const DashboardPage = () => {
       </div>
       
       {/* Bagian 2: Chart Stand Terlaris */}
-      <div>
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <TopStandChart data={data.stand_performance} />
       </div>
+
+      {/* MODAL SETUP MFA */}
+      <MfaSetupModal 
+        isOpen={isMfaOpen} 
+        onClose={() => setIsMfaOpen(false)} 
+        onSuccess={() => window.location.reload()} 
+      />
+
     </div>
   );
 };
