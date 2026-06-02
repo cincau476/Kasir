@@ -31,8 +31,8 @@ export const getLaporanKeuangan = (paramsObject) => {
 
 
 // === MFA Keamanan ===
-export const generateMfaSetup = () => apiClient.post('/users/mfa/setup/generate/');
+export const generateMfaSetup = () => api.post('/users/mfa/setup/generate/');
 
-export const verifyMfaSetup = (otpCode) => apiClient.post('/users/mfa/setup/verify/', { 
+export const verifyMfaSetup = (otpCode) => api.post('/users/mfa/setup/verify/', { 
     otp_code: otpCode 
 });
