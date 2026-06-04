@@ -9,12 +9,9 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // URL portal login terpusat
+  // URL portal login terpusat (Dinamis menyesuaikan IP/Domain)
   const getLoginUrl = () => {
-    const baseUrl = window.location.origin;
-    return window.location.hostname === 'localhost' 
-      ? 'http://localhost:5173/login' 
-      : `${baseUrl}/login`; 
+    return `${window.location.origin}/login`; 
   };
 
   useEffect(() => {
@@ -27,15 +24,14 @@ export const AuthProvider = ({ children }) => {
 
       if (tokenFromUrl) {
         activeToken = tokenFromUrl;
-        // SECURE CODING: Simpan dengan nama standar 'access_token' di localStorage
-        // agar terbaca oleh Axios Interceptor di api.js
-        localStorage.setItem('access_token', tokenFromUrl);
+        // PERBAIKAN 1: Gunakan nama 'kasir_token' dan simpan di sessionStorage agar sinkron dengan api.js
+        sessionStorage.setItem('kasir_token', tokenFromUrl);
         
-        // Bersihkan token dari URL agar tidak bocor jika di-copy-paste (Shoulder Surfing mitigation)
+        // Bersihkan token dari URL agar tidak bocor
         window.history.replaceState({}, document.title, window.location.pathname);
       } else {
-        // 2. Fallback: Ambil dari localStorage (bukan sessionStorage)
-        activeToken = localStorage.getItem('access_token');
+        // 2. Fallback: Ambil dari sessionStorage
+        activeToken = sessionStorage.getItem('kasir_token');
       }
 
       // Jika sama sekali tidak ada token
@@ -46,35 +42,30 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Set token ke state segera
       setToken(activeToken);
 
       try {
         // 3. Verifikasi token ke backend
-        // Interceptor di api.js akan otomatis menyisipkan: Authorization: Bearer <token>
-        // dan melakukan Silent Refresh jika token ternyata sudah expired.
         const response = await checkAuth();
         
-        // Validasi struktur data sebelum set user
         if (response.data && response.data.user) {
           setUser(response.data.user);
-          // Opsional: Simpan data user ke sessionStorage untuk caching UI
           sessionStorage.setItem('kasir_user', JSON.stringify(response.data.user));
         } else if (response.user) { 
-          // Fallback jika API merespons langsung tanpa bungkus .data
           setUser(response.user);
+          sessionStorage.setItem('kasir_user', JSON.stringify(response.user));
         } else {
           throw new Error("Format user tidak valid dari API");
         }
 
       } catch (error) {
         console.error("Auth Failed:", error);
-        // SECURE CODING: Bersihkan token standar jika otentikasi gagal total
-        localStorage.removeItem('access_token');
+        // Bersihkan sesi jika otentikasi gagal
+        sessionStorage.removeItem('kasir_token');
         sessionStorage.removeItem('kasir_user');
+        localStorage.removeItem('kasir_token');
         setToken(null);
         setUser(null);
-        // Biarkan ProtectedRoute yang menangani redirect ke halaman Login
       } finally {
         setIsLoading(false);
       }
@@ -83,10 +74,8 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  // Fungsi Login untuk dipanggil dari form login manual (jika tidak dari portal SSO)
   const login = useCallback((newToken, userData) => {
-    // SECURE CODING: Simpan Access Token di localStorage agar tab browser baru tetap login
-    localStorage.setItem('access_token', newToken);
+    sessionStorage.setItem('kasir_token', newToken);
     sessionStorage.setItem('kasir_user', JSON.stringify(userData));
     setToken(newToken);
     setUser(userData);
@@ -94,16 +83,19 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(async () => {
     try {
-      // Memanggil endpoint logout di Django untuk me-revoke token di database
       await logoutApi();
     } catch (err) {
       console.warn("Logout server fail", err);
     } finally {
-      // SECURE CODING: Bersihkan semua jejak sesi
-      localStorage.removeItem('access_token');
-      sessionStorage.clear();
+      // PERBAIKAN 2: Pastikan yang dihapus adalah kunci yang tepat ('kasir_token')
+      sessionStorage.removeItem('kasir_token');
+      sessionStorage.removeItem('kasir_user');
+      localStorage.removeItem('kasir_token');
+      localStorage.removeItem('kasir_user');
+      
       setToken(null);
       setUser(null);
+      
       // Tendang ke halaman login utama
       window.location.href = getLoginUrl();
     }
