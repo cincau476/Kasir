@@ -18,7 +18,10 @@ export const createPosCashOrder = (orderData) => api.post('orders/create/', orde
 
 // 3. Antrian / Konfirmasi Kasir
 export const getAwaitingCashOrders = (params) => api.get('orders/all/', { params });
-export const confirmCashPaymentApi = (orderUuid) => api.post(`cashier/cash/confirm/${orderUuid}/`);
+export const confirmCashPayment = (orderUuid) => request(`/orders/${orderUuid}/status/`, {
+    method: 'POST',
+    body: JSON.stringify({ status: 'PAID' })
+});
 
 // 4. LaporanKeuanganPage
 export const getLaporanKeuangan = (paramsObject) => {
