@@ -108,6 +108,8 @@ const KasirPosPage = () => {
       const orderData = {
         tenant: selectedStandId,
         payment_method: "CASH",
+        name: "Pelanggan POS (Offline)", 
+        email: "pos@kantinku.com",
         items: cart.map(item => ({
           menu_item: item.id,
           qty: item.qty
